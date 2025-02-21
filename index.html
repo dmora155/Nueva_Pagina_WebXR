@@ -6,7 +6,6 @@
     <title>Experiencia AR en iOS, Android y PC</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://threejs.org/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://threejs.org/examples/js/WebXR.js"></script>
     <script src="https://threejs.org/examples/jsm/webxr/ARButton.js"></script>
     <style>
         body {
@@ -90,7 +89,7 @@
             } else if (os === "Android") {
                 openInSceneViewer(objects[objectKey].glb);
             } else if (os === "PC") {
-                startWebXR(objects[objectKey].glb);
+                startWebXR();
             } else {
                 alert("Tu dispositivo no es compatible con AR.");
             }
@@ -106,7 +105,7 @@
             window.location.href = `${usdzUrl}?allowsContentScaling=0&autostart=1`;
         }
 
-        function startWebXR(modelUrl) {
+        function startWebXR() {
             if (!navigator.xr) {
                 alert("Tu navegador no soporta WebXR.");
                 return;
@@ -125,19 +124,32 @@
             scene.add(light);
 
             const loader = new THREE.GLTFLoader();
-            loader.load(
-                modelUrl,
-                function (gltf) {
-                    const model = gltf.scene;
-                    model.scale.set(0.5, 0.5, 0.5);
-                    scene.add(model);
-                },
-                undefined,
-                function (error) {
-                    console.error("Error al cargar el modelo:", error);
-                    alert("No se pudo cargar el modelo en WebXR.");
-                }
-            );
+
+            // Cargar los 3 modelos con posiciones distintas
+            const modelPositions = [
+                { x: -1.5, y: 0, z: -2 },
+                { x: 0, y: 0, z: -2 },
+                { x: 1.5, y: 0, z: -2 }
+            ];
+
+            let index = 0;
+            for (const key in objects) {
+                loader.load(
+                    objects[key].glb,
+                    function (gltf) {
+                        const model = gltf.scene;
+                        model.scale.set(0.5, 0.5, 0.5);
+                        model.position.set(modelPositions[index].x, modelPositions[index].y, modelPositions[index].z);
+                        scene.add(model);
+                        index++;
+                    },
+                    undefined,
+                    function (error) {
+                        console.error(`Error al cargar el modelo ${key}:`, error);
+                        alert(`No se pudo cargar el modelo ${key} en WebXR.`);
+                    }
+                );
+            }
 
             const animate = function () {
                 renderer.setAnimationLoop(() => {
