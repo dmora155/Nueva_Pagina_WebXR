@@ -3,150 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Experiencia AR en iOS, Android y PC</title>
+    <title>Vista previa de modelo 3D</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://threejs.org/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://threejs.org/examples/js/WebXR.js"></script>
-    <script src="https://threejs.org/examples/jsm/webxr/ARButton.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-            background-color: #f8f8f8;
-        }
-
-        button {
-            padding: 10px 15px;
-            font-size: 16px;
-            background-color: #ffcc00;
-            color: black;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 10px;
-        }
-
-        button:hover {
-            background-color: #ffbb00;
-        }
-
-        #ar-container {
-            margin-top: 20px;
-        }
+        body { text-align: center; background-color: #f8f8f8; }
+        canvas { display: block; margin: auto; }
     </style>
 </head>
 <body>
-    <h1>Experiencia AR en iOS, Android y PC</h1>
-    <p>Selecciona un objeto para verlo en AR.</p>
-
-    <div class="object-selection">
-        <button onclick="openAR('Perfume1')">Perfume Ariana Grande</button>
-        <button onclick="openAR('Perfume2')">Lámpara</button>
-        <button onclick="openAR('star')">Modelo de prueba</button>
-    </div>
-
-    <div id="ar-container"></div>
+    <h1>Vista previa de modelo 3D</h1>
+    <p>Usa el mouse para rotar el modelo.</p>
+    <div id="viewer"></div>
 
     <script>
-        function getOS() {
-            const userAgent = navigator.userAgent || navigator.vendor;
-            if (/iPad|iPhone|iPod/.test(userAgent) || 
-                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) {
-                return "iOS";
-            } else if (/android/i.test(userAgent)) {
-                return "Android";
-            } else {
-                return "PC";
-            }
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth * 0.8, window.innerHeight * 0.6);
+        document.getElementById("viewer").appendChild(renderer.domElement);
+
+        const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+        scene.add(light);
+
+        const loader = new THREE.GLTFLoader();
+        loader.load("https://example.com/model.glb", function (gltf) {
+            const model = gltf.scene;
+            model.scale.set(2, 2, 2);
+            scene.add(model);
+        });
+
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            scene.rotation.y += 0.005; // Rotación automática
+            renderer.render(scene, camera);
         }
-
-        const os = getOS();
-
-        const objects = {
-            Perfume1: {
-                glb: "https://firebasestorage.googleapis.com/v0/b/vitrinea-4433b.appspot.com/o/3D_Objects%2FPerfume.glb?alt=media",
-                usdz: "https://firebasestorage.googleapis.com/v0/b/vitrinea-4433b.appspot.com/o/3D_Objects%2FPerfume.usdz?alt=media"
-            },
-            Perfume2: {
-                glb: "https://firebasestorage.googleapis.com/v0/b/vitrinea-4433b.appspot.com/o/3D_Objects%2FLampara.glb?alt=media",
-                usdz: "https://firebasestorage.googleapis.com/v0/b/vitrinea-4433b.appspot.com/o/3D_Objects%2FLampara.usdz?alt=media"
-            },
-            star: {
-                glb: "https://firebasestorage.googleapis.com/v0/b/vitrinea-4433b.appspot.com/o/3D_Objects%2Fstar.glb?alt=media",
-                usdz: "https://firebasestorage.googleapis.com/v0/b/vitrinea-4433b.appspot.com/o/3D_Objects%2Fstar.usdz?alt=media"
-            }
-        };
-
-        function openAR(objectKey) {
-            if (!objects[objectKey]) {
-                alert("Modelo no encontrado.");
-                return;
-            }
-
-            if (os === "iOS") {
-                openInQuickLook(objects[objectKey].usdz);
-            } else if (os === "Android") {
-                openInSceneViewer(objects[objectKey].glb);
-            } else if (os === "PC") {
-                startWebXR(objects[objectKey].glb);
-            } else {
-                alert("Tu dispositivo no es compatible con AR.");
-            }
-        }
-
-        function openInSceneViewer(modelUrl) {
-            alert("Abriendo modelo en Scene Viewer...");
-            window.location.href = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(modelUrl)}&mode=ar_preferred`;
-        }
-
-        function openInQuickLook(usdzUrl) {
-            alert("Abriendo en Quick Look...");
-            window.location.href = `${usdzUrl}?allowsContentScaling=0&autostart=1`;
-        }
-
-        function startWebXR(modelUrl) {
-            if (!navigator.xr) {
-                alert("Tu navegador no soporta WebXR.");
-                return;
-            }
-
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.xr.enabled = true;
-
-            document.body.appendChild(renderer.domElement);
-            document.body.appendChild(ARButton.createButton(renderer));
-
-            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-            scene.add(light);
-
-            const loader = new THREE.GLTFLoader();
-            loader.load(
-                modelUrl,
-                function (gltf) {
-                    const model = gltf.scene;
-                    model.scale.set(0.5, 0.5, 0.5);
-                    scene.add(model);
-                },
-                undefined,
-                function (error) {
-                    console.error("Error al cargar el modelo:", error);
-                    alert("No se pudo cargar el modelo en WebXR.");
-                }
-            );
-
-            const animate = function () {
-                renderer.setAnimationLoop(() => {
-                    renderer.render(scene, camera);
-                });
-            };
-
-            animate();
-        }
+        animate();
     </script>
 </body>
 </html>
